@@ -55,6 +55,14 @@
     const canvasSize = 400;
     const totalBoxes = canvasSize / box;
 
+    // Carregar imagens
+    const snakeHeadImage = new Image();
+    snakeHeadImage.src = 'snake_head.png'; // Insira o caminho para sua imagem de cabeça da cobra
+    const snakeBodyImage = new Image();
+    snakeBodyImage.src = 'snake_body.png'; // Insira o caminho para sua imagem de corpo da cobra
+    const foodImage = new Image();
+    foodImage.src = 'fruit.png'; // Insira o caminho para sua imagem de comida (fruta)
+
     let snake = [{ x: 9 * box, y: 9 * box }];
     let direction = "right";
     let food = spawnFood();
@@ -88,13 +96,17 @@
 
       // Desenha a cobrinha
       snake.forEach((seg, i) => {
-        ctx.fillStyle = i === 0 ? "#ff007c" : "#00e5ff"; // cabeça e corpo
-        ctx.fillRect(seg.x, seg.y, box, box);
+        if (i === 0) {
+          // Desenha a cabeça da cobra com a imagem
+          ctx.drawImage(snakeHeadImage, seg.x, seg.y, box, box);
+        } else {
+          // Desenha o corpo da cobra com a imagem
+          ctx.drawImage(snakeBodyImage, seg.x, seg.y, box, box);
+        }
       });
 
       // Desenha a comida
-      ctx.fillStyle = "#ffea00";
-      ctx.fillRect(food.x, food.y, box, box);
+      ctx.drawImage(foodImage, food.x, food.y, box, box);
 
       // Calcula a nova posição da cobrinha
       let snakeX = snake[0].x;
