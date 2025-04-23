@@ -70,7 +70,21 @@
     let interval = 150;
     let game = setInterval(drawGame, interval);
 
+    // Função para alternar para tela cheia
     document.addEventListener("keydown", handleKey);
+    document.body.addEventListener("dblclick", goFullScreen); // Duplo clique para tela cheia
+
+    function goFullScreen() {
+      if (canvas.requestFullscreen) {
+        canvas.requestFullscreen();
+      } else if (canvas.mozRequestFullScreen) { // Firefox
+        canvas.mozRequestFullScreen();
+      } else if (canvas.webkitRequestFullscreen) { // Chrome, Safari e Opera
+        canvas.webkitRequestFullscreen();
+      } else if (canvas.msRequestFullscreen) { // IE/Edge
+        canvas.msRequestFullscreen();
+      }
+    }
 
     function handleKey(e) {
       const key = e.key;
