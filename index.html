@@ -64,6 +64,7 @@
   <script>
     const canvas = document.getElementById("game");
     const ctx = canvas.getContext("2d");
+
     const box = 20;
     const canvasSize = 400;
     const totalBoxes = canvasSize / box;
@@ -144,9 +145,13 @@
       snake.unshift(newHead);
     }
 
-    function collision(head, array) { return array.some(seg => head.x === seg.x && head.y === seg.y); }
+    function collision(head, array) {
+      return array.some(seg => head.x === seg.x && head.y === seg.y);
+    }
 
-    function updateScore() { document.getElementById("score").textContent = score; }
+    function updateScore() {
+      document.getElementById("score").textContent = score;
+    }
 
     function endGame() {
       clearInterval(game);
@@ -162,7 +167,9 @@
       localStorage.setItem("snakeHighscores", JSON.stringify(highs.slice(0, 5)));
     }
 
-    function getHighscores() { return JSON.parse(localStorage.getItem("snakeHighscores")) || []; }
+    function getHighscores() {
+      return JSON.parse(localStorage.getItem("snakeHighscores")) || [];
+    }
 
     // Neon gradient helper
     function getNeonGradient(x, y, cssVar) {
