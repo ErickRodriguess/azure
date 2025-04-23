@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Jogo da Cobrinha</title>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
   <style>
     body {
       margin: 0;
@@ -18,16 +19,33 @@
     canvas {
       background-color: #c8e6c9;
       border: 5px solid #2e7d32;
+      touch-action: none;
     }
     h1 {
-      margin-bottom: 20px;
+      margin-bottom: 10px;
       color: #2e7d32;
+    }
+    #score {
+      margin: 0 0 20px;
+      font-size: 1.2rem;
+      color: #1b5e20;
+    }
+    #fullscreenBtn {
+      margin-top: 10px;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      background: #2e7d32;
+      color: #fff;
+      font-size: 1rem;
     }
   </style>
 </head>
 <body>
   <h1>Jogo da Cobrinha</h1>
+  <p id="score">0</p>
   <canvas id="game" width="400" height="400"></canvas>
+  <button id="fullscreenBtn">Tela cheia</button>
 
   <script>
     const canvas = document.getElementById("game");
@@ -37,22 +55,36 @@
     const canvasSize = 400;
     const totalBoxes = canvasSize / box;
 
-    let snake = [];
-    snake[0] = { x: 9 * box, y: 9 * box };
-
+    let snake = [{ x: 9 * box, y: 9 * box }];
     let direction = "right";
     let food = spawnFood();
-
     let score = 0;
+    let interval = 150;
+    let game = setInterval(drawGame, interval);
+    let paused = false;
 
-    document.addEventListener("keydown", updateDirection);
+    document.addEventListener("keydown", handleKey);
+    document.getElementById("fullscreenBtn").addEventListener("click", () => {
+      canvas.requestFullscreen?.();
+    });
 
-    function updateDirection(event) {
-      const key = event.key;
+    function handleKey(e) {
+      const key = e.key;
+      if (key === " ") return togglePause();
+      if (paused) return; // não muda direção quando pausado
       if (key === "ArrowLeft" && direction !== "right") direction = "left";
       else if (key === "ArrowUp" && direction !== "down") direction = "up";
       else if (key === "ArrowRight" && direction !== "left") direction = "right";
       else if (key === "ArrowDown" && direction !== "up") direction = "down";
+    }
+
+    function togglePause() {
+      paused = !paused;
+      if (paused) {
+        clearInterval(game);
+      } else {
+        game = setInterval(drawGame, interval);
+      }
     }
 
     function spawnFood() {
@@ -65,22 +97,21 @@
     function drawGame() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      for (let i = 0; i < snake.length; i++) {
+      snake.forEach((seg, i) => {
         ctx.fillStyle = i === 0 ? "#1b5e20" : "#66bb6a";
-        ctx.fillRect(snake[i].x, snake[i].y, box, box);
-      }
+        ctx.fillRect(seg.x, seg.y, box, box);
+      });
 
       ctx.fillStyle = "#f44336";
       ctx.fillRect(food.x, food.y, box, box);
 
-      let snakeX = snake[0].x;
-      let snakeY = snake[0].y;
-
+      let { x: snakeX, y: snakeY } = snake[0];
       if (direction === "left") snakeX -= box;
       if (direction === "right") snakeX += box;
       if (direction === "up") snakeY -= box;
       if (direction === "down") snakeY += box;
 
+      // colisão com parede ou corpo
       if (
         snakeX < 0 ||
         snakeY < 0 ||
@@ -88,16 +119,22 @@
         snakeY >= canvasSize ||
         collision({ x: snakeX, y: snakeY }, snake)
       ) {
-        clearInterval(game);
-        alert("Fim de jogo! Pontuação: " + score);
-        location.reload();
+        endGame();
+        return;
       }
 
-      let newHead = { x: snakeX, y: snakeY };
+      const newHead = { x: snakeX, y: snakeY };
 
       if (snakeX === food.x && snakeY === food.y) {
         score++;
+        updateScore();
         food = spawnFood();
+        // acelera a cada 5 pontos, mínimo 60ms
+        if (score % 5 === 0 && interval > 60) {
+          interval -= 10;
+          clearInterval(game);
+          game = setInterval(drawGame, interval);
+        }
       } else {
         snake.pop();
       }
@@ -106,15 +143,31 @@
     }
 
     function collision(head, array) {
-      for (let i = 0; i < array.length; i++) {
-        if (head.x === array[i].x && head.y === array[i].y) {
-          return true;
-        }
-      }
-      return false;
+      return array.some(seg => head.x === seg.x && head.y === seg.y);
     }
 
-    let game = setInterval(drawGame, 150);
+    function updateScore() {
+      document.getElementById("score").textContent = score;
+    }
+
+    function endGame() {
+      clearInterval(game);
+      saveHighscore();
+      alert("Fim de jogo! Pontuação: " + score + "\nMelhores pontuações:" + getHighscores().join("\n"));
+      location.reload();
+    }
+
+    // rankings locais
+    function saveHighscore() {
+      const highs = getHighscores();
+      highs.push(score);
+      highs.sort((a, b) => b - a);
+      localStorage.setItem("snakeHighscores", JSON.stringify(highs.slice(0, 5)));
+    }
+
+    function getHighscores() {
+      return JSON.parse(localStorage.getItem("snakeHighscores")) || [];
+    }
   </script>
 </body>
 </html>
