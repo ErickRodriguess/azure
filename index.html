@@ -40,26 +40,12 @@
       image-rendering: pixelated;
       touch-action: none;
     }
-    #fullscreenBtn {
-      margin-top: 18px;
-      padding: 10px 20px;
-      border: 3px solid var(--neon-body-b);
-      border-radius: 12px;
-      background: transparent;
-      color: var(--neon-body-b);
-      font-family: 'Press Start 2P', monospace;
-      font-size: 0.8rem;
-      cursor: pointer;
-      text-shadow: 0 0 6px var(--neon-body-b);
-    }
-    #fullscreenBtn:hover { box-shadow: 0 0 10px var(--neon-body-b); }
   </style>
 </head>
 <body>
   <h1>Jogo da Cobrinha</h1>
   <p id="score">0</p>
   <canvas id="game" width="400" height="400"></canvas>
-  <button id="fullscreenBtn">Tela cheia</button>
 
   <script>
     const canvas = document.getElementById("game");
@@ -75,24 +61,15 @@
     let score = 0;
     let interval = 150;
     let game = setInterval(drawGame, interval);
-    let paused = false;
 
     document.addEventListener("keydown", handleKey);
-    document.getElementById("fullscreenBtn").addEventListener("click", () => canvas.requestFullscreen?.());
 
     function handleKey(e) {
       const key = e.key;
-      if (key === " ") return togglePause();
-      if (paused) return;
       if (key === "ArrowLeft" && direction !== "right") direction = "left";
       else if (key === "ArrowUp" && direction !== "down") direction = "up";
       else if (key === "ArrowRight" && direction !== "left") direction = "right";
       else if (key === "ArrowDown" && direction !== "up") direction = "down";
-    }
-
-    function togglePause() {
-      paused = !paused;
-      if (paused) clearInterval(game); else game = setInterval(drawGame, interval);
     }
 
     function spawnFood() {
@@ -109,75 +86,62 @@
     function drawGame() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+      // Desenha a cobrinha
       snake.forEach((seg, i) => {
-        ctx.fillStyle = i === 0 ? getNeonGradient(seg.x, seg.y, '--neon-head') : (i % 2 ? getNeonGradient(seg.x, seg.y, '--neon-body-a') : getNeonGradient(seg.x, seg.y, '--neon-body-b'));
+        ctx.fillStyle = i === 0 ? "#ff007c" : "#00e5ff"; // cabeça e corpo
         ctx.fillRect(seg.x, seg.y, box, box);
       });
 
-      ctx.fillStyle = getNeonGradient(food.x, food.y, '--neon-food');
+      // Desenha a comida
+      ctx.fillStyle = "#ffea00";
       ctx.fillRect(food.x, food.y, box, box);
 
-      let { x: snakeX, y: snakeY } = snake[0];
+      // Calcula a nova posição da cobrinha
+      let snakeX = snake[0].x;
+      let snakeY = snake[0].y;
+
       if (direction === "left") snakeX -= box;
       if (direction === "right") snakeX += box;
       if (direction === "up") snakeY -= box;
       if (direction === "down") snakeY += box;
 
-      if (snakeX < 0 || snakeY < 0 || snakeX >= canvasSize || snakeY >= canvasSize || collision({ x: snakeX, y: snakeY }, snake)) {
-        endGame();
-        return;
+      // Verifica se a cobrinha bateu nas paredes ou em si mesma
+      if (
+        snakeX < 0 ||
+        snakeY < 0 ||
+        snakeX >= canvasSize ||
+        snakeY >= canvasSize ||
+        collision({ x: snakeX, y: snakeY }, snake)
+      ) {
+        clearInterval(game);
+        alert("Fim de jogo! Pontuação: " + score);
+        location.reload();
       }
 
-      const newHead = { x: snakeX, y: snakeY };
+      let newHead = { x: snakeX, y: snakeY };
 
+      // Verifica se a cobrinha comeu a comida
       if (snakeX === food.x && snakeY === food.y) {
         score++;
-        updateScore();
         food = spawnFood();
-        if (score % 5 === 0 && interval > 60) {
-          interval -= 10;
-          clearInterval(game);
-          game = setInterval(drawGame, interval);
-        }
       } else {
         snake.pop();
       }
+
+      // Adiciona a nova cabeça na frente da cobrinha
       snake.unshift(newHead);
-    }
 
-    function collision(head, array) {
-      return array.some(seg => head.x === seg.x && head.y === seg.y);
-    }
-
-    function updateScore() {
+      // Atualiza a pontuação
       document.getElementById("score").textContent = score;
     }
 
-    function endGame() {
-      clearInterval(game);
-      saveHighscore();
-      alert(`Fim de jogo! Pontuação: ${score}\nMelhores pontuações:\n${getHighscores().join("\n")}`);
-      location.reload();
-    }
-
-    function saveHighscore() {
-      const highs = getHighscores();
-      highs.push(score);
-      highs.sort((a, b) => b - a);
-      localStorage.setItem("snakeHighscores", JSON.stringify(highs.slice(0, 5)));
-    }
-
-    function getHighscores() {
-      return JSON.parse(localStorage.getItem("snakeHighscores")) || [];
-    }
-
-    // Neon gradient helper
-    function getNeonGradient(x, y, cssVar) {
-      const c = getComputedStyle(document.documentElement).getPropertyValue(cssVar);
-      const grd = ctx.createLinearGradient(x, y, x + box, y + box);
-      grd.addColorStop(0, c);
-      grd.addColorStop(1, "#ffffff22");
-      return grd;
+    function collision(head, array) {
+      for (let i = 0; i < array.length; i++) {
+        if (head.x === array[i].x && head.y === array[i].y) {
+          return true;
+        }
+      }
+      return false;
     }
   </script>
 </body>
