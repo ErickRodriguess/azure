@@ -1,174 +1,57 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jogo da Cobrinha</title>
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --bg: #0d0d24;
-      --grid: #1a1a3a;
-      --neon-head: #ff007c;
-      --neon-body-a: #8a2be2;
-      --neon-body-b: #00e5ff;
-      --neon-food: #ffea00;
-      --score: #00e5ff;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      background: radial-gradient(circle at top, #1a1a3a 0%, var(--bg) 70%);
-      color: var(--score);
-      font-family: 'Press Start 2P', monospace;
-      overflow: hidden;
-    }
-    h1 { margin: 0 0 20px; font-size: 1.5rem; text-shadow: 0 0 8px var(--neon-head); }
-    #score { margin: 0 0 20px; font-size: 1rem; text-shadow: 0 0 6px var(--score); }
-    canvas {
-      background: repeating-linear-gradient(0deg, var(--grid) 0 2px, transparent 2px 40px),
-                  repeating-linear-gradient(90deg, var(--grid) 0 2px, transparent 2px 40px),
-                  var(--bg);
-      border: 8px solid var(--neon-head);
-      box-shadow: 0 0 15px var(--neon-head);
-      image-rendering: pixelated;
-      touch-action: none;
-    }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Snake Retro</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+ :root{--bg:#0d0d24;--grid:#1a1a3a;--head:#ff007c;--body:#00e5ff;--food:#ffea00;--score:#00e5ff}
+ *{box-sizing:border-box}
+ body{margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;
+      background:radial-gradient(circle at top,#1a1a3a 0%,var(--bg) 70%);color:var(--score);font-family:'Press Start 2P',monospace}
+ h1{margin:0 0 12px;font-size:1.3rem;text-shadow:0 0 8px var(--head)}
+ #score{margin:0 0 18px;font-size:1rem;text-shadow:0 0 6px var(--score)}
+ canvas{background:repeating-linear-gradient(0deg,var(--grid) 0 2px,transparent 2px 40px),
+                    repeating-linear-gradient(90deg,var(--grid) 0 2px,transparent 2px 40px),var(--bg);
+        border:8px solid var(--head);box-shadow:0 0 15px var(--head)}
+</style>
 </head>
 <body>
-  <h1>Jogo da Cobrinha</h1>
-  <p id="score">0</p>
-  <canvas id="game" width="400" height="400"></canvas>
+<h1>Jogo da Cobrinha</h1>
+<p id="score">0</p>
+<canvas id="game" width="400" height="400"></canvas>
 
-  <script>
-    const canvas = document.getElementById("game");
-    const ctx = canvas.getContext("2d");
+<script>
+const c=document.getElementById("game"),ctx=c.getContext("2d");
+const box=20,size=400,n=size/box;
+let snake=[{x:9*box,y:9*box}],dir="right",food=rndPos(),score=0,loop=setInterval(tick,150);
 
-    const box = 20;
-    const canvasSize = 400;
-    const totalBoxes = canvasSize / box;
+document.addEventListener("keydown",e=>{
+  const k=e.key;
+  if(k==="ArrowLeft"&&dir!=="right")dir="left";
+  if(k==="ArrowUp"&&dir!=="down")dir="up";
+  if(k==="ArrowRight"&&dir!=="left")dir="right";
+  if(k==="ArrowDown"&&dir!=="up")dir="down";
+});
 
-    // Carregar imagens
-    const snakeHeadImage = new Image();
-    snakeHeadImage.src = 'snake_head.png'; // Insira o caminho para sua imagem de cabeça da cobra
-    const snakeBodyImage = new Image();
-    snakeBodyImage.src = 'snake_body.png'; // Insira o caminho para sua imagem de corpo da cobra
-    const foodImage = new Image();
-    foodImage.src = 'fruit.png'; // Insira o caminho para sua imagem de comida (fruta)
+function rndPos(){let p;do{p={x:Math.floor(Math.random()*n)*box,y:Math.floor(Math.random()*n)*box};}
+  while(hit(p,snake));return p;}
 
-    let snake = [{ x: 9 * box, y: 9 * box }];
-    let direction = "right";
-    let food = spawnFood();
-    let score = 0;
-    let interval = 150;
-    let game = setInterval(drawGame, interval);
+function tick(){
+  ctx.clearRect(0,0,size,size);
+  snake.forEach((s,i)=>{ctx.fillStyle=i?"var(--body)":"var(--head)";ctx.fillRect(s.x,s.y,box,box);});
+  ctx.fillStyle="var(--food)";ctx.fillRect(food.x,food.y,box,box);
 
-    // Função para alternar para tela cheia
-    document.addEventListener("keydown", handleKey);
-    document.body.addEventListener("dblclick", goFullScreen); // Duplo clique para tela cheia
-
-    function goFullScreen() {
-      if (canvas.requestFullscreen) {
-        canvas.requestFullscreen();
-      } else if (canvas.mozRequestFullScreen) { // Firefox
-        canvas.mozRequestFullScreen();
-      } else if (canvas.webkitRequestFullscreen) { // Chrome, Safari e Opera
-        canvas.webkitRequestFullscreen();
-      } else if (canvas.msRequestFullscreen) { // IE/Edge
-        canvas.msRequestFullscreen();
-      }
-    }
-
-    function handleKey(e) {
-      const key = e.key;
-      if (key === "ArrowLeft" && direction !== "right") direction = "left";
-      else if (key === "ArrowUp" && direction !== "down") direction = "up";
-      else if (key === "ArrowRight" && direction !== "left") direction = "right";
-      else if (key === "ArrowDown" && direction !== "up") direction = "down";
-    }
-
-    function spawnFood() {
-      let pos;
-      do {
-        pos = {
-          x: Math.floor(Math.random() * totalBoxes) * box,
-          y: Math.floor(Math.random() * totalBoxes) * box,
-        };
-      } while (collision(pos, snake));
-      return pos;
-    }
-
-    function drawGame() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Desenha a cobrinha
-      snake.forEach((seg, i) => {
-        if (i === 0) {
-          // Desenha a cabeça da cobra com a imagem
-          ctx.drawImage(snakeHeadImage, seg.x, seg.y, box, box);
-        } else {
-          // Desenha o corpo da cobra com a imagem
-          ctx.drawImage(snakeBodyImage, seg.x, seg.y, box, box);
-        }
-      });
-
-      // Desenha a comida
-      ctx.drawImage(foodImage, food.x, food.y, box, box);
-
-      // Calcula a nova posição da cobrinha
-      let snakeX = snake[0].x;
-      let snakeY = snake[0].y;
-
-      if (direction === "left") snakeX -= box;
-      if (direction === "right") snakeX += box;
-      if (direction === "up") snakeY -= box;
-      if (direction === "down") snakeY += box;
-
-      // Verifica se a cobrinha bateu nas paredes ou em si mesma
-      if (
-        snakeX < 0 ||
-        snakeY < 0 ||
-        snakeX >= canvasSize ||
-        snakeY >= canvasSize ||
-        collision({ x: snakeX, y: snakeY }, snake)
-      ) {
-        clearInterval(game);
-        alert("Fim de jogo! Pontuação: " + score);
-        location.reload();
-      }
-
-      let newHead = { x: snakeX, y: snakeY };
-
-      // Verifica se a cobrinha comeu a comida
-      if (snakeX === food.x && snakeY === food.y) {
-        score++;
-        food = spawnFood();
-      } else {
-        snake.pop();
-      }
-
-      // Adiciona a nova cabeça na frente da cobrinha
-      snake.unshift(newHead);
-
-      // Atualiza a pontuação
-      document.getElementById("score").textContent = score;
-    }
-
-    function collision(head, array) {
-      for (let i = 0; i < array.length; i++) {
-        if (head.x === array[i].x && head.y === array[i].y) {
-          return true;
-        }
-      }
-      return false;
-    }
-  </script>
+  let {x,y}=snake[0];
+  if(dir==="left")x-=box; if(dir==="right")x+=box; if(dir==="up")y-=box; if(dir==="down")y+=box;
+  if(x<0||y<0||x>=size||y>=size||hit({x,y},snake)){clearInterval(loop);alert(`Fim! Pontos: ${score}`);location.reload();}
+  const head={x,y};
+  if(x===food.x&&y===food.y){score++;document.getElementById("score").textContent=score;food=rndPos();}
+  else snake.pop();
+  snake.unshift(head);
+}
+function hit(h,arr){return arr.some(a=>a.x===h.x&&a.y===h.y);}
+</script>
 </body>
 </html>
